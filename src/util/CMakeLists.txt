@@ -17,6 +17,7 @@ set(SOURCE_FILES
 	${BASE_SOURCE_FILES}
 	audio-buffer.c
 	audio-resampler.c
+	audio-time-stretch.c
 	convolve.c
 	elf-read.c
 	geometry.c
@@ -41,6 +42,8 @@ set(GUI_FILES
 	gui/menu.c)
 
 set(TEST_FILES
+	test/audio-time-stretch-threaded.c
+	test/audio-time-stretch.c
 	test/circle-buffer.c
 	test/color.c
 	test/geometry.c
