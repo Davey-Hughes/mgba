@@ -18,6 +18,7 @@ set(SOURCE_FILES
 	audio-buffer.c
 	audio-low-pass.c
 	audio-resampler.c
+	audio-speed-filter.c
 	audio-stream-ramp.c
 	audio-time-stretch.c
 	convolve.c
@@ -45,6 +46,8 @@ set(GUI_FILES
 
 set(TEST_FILES
 	test/audio-low-pass.c
+	test/audio-speed-filter.c
+	test/audio-speed.c
 	test/audio-stream-ramp.c
 	test/audio-time-stretch-threaded.c
 	test/audio-time-stretch.c
