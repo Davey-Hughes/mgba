@@ -403,6 +403,69 @@
             </property>
            </widget>
           </item>
+          <item row="10" column="0" colspan="2">
+           <widget class="Line" name="line_23">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="1">
+           <widget class="QCheckBox" name="audioSpeedFilter">
+            <property name="toolTip">
+             <string>Time-stretch fast forward and slow motion audio so it keeps its pitch instead of being chopped up.</string>
+            </property>
+            <property name="text">
+             <string>Pitch-correct fast forward and slow motion</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_52">
+            <item>
+             <widget class="QCheckBox" name="audioSpeedLowPassEnable">
+              <property name="toolTip">
+               <string>Rolls the treble off fast forward audio, which turns harsh when sped up.</string>
+              </property>
+              <property name="text">
+               <string>Low-pass fast forward audio</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="audioSpeedLowPass">
+              <property name="toolTip">
+               <string>The cut-off is this divided by the emulation speed.</string>
+              </property>
+              <property name="minimum">
+               <number>1000</number>
+              </property>
+              <property name="maximum">
+               <number>47500</number>
+              </property>
+              <property name="singleStep">
+               <number>500</number>
+              </property>
+              <property name="suffix">
+               <string> Hz</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_lowPass">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
          </layout>
         </widget>
        </item>
@@ -2410,6 +2473,22 @@
     <hint type="destinationlabel">
      <x>343</x>
      <y>372</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>audioSpeedLowPassEnable</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>audioSpeedLowPass</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
     </hint>
    </hints>
   </connection>

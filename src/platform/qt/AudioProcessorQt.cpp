@@ -10,6 +10,7 @@
 #include "LogController.h"
 
 #include <QAudioOutput>
+#include <QTimer>
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QMediaDevices>
 #endif
@@ -35,6 +36,8 @@ void AudioProcessorQt::setInput(std::shared_ptr<CoreController> controller) {
 }
 
 void AudioProcessorQt::stop() {
+	m_pausePending = false;
+	++m_pauseGeneration;
 	if (m_audioOutput) {
 		m_audioOutput->stop();
 		m_audioOutput.reset();
@@ -77,20 +80,65 @@ bool AudioProcessorQt::start() {
 #endif
 	}
 
-	if (m_audioOutput->state() == QAudio::SuspendedState) {
+	if (m_pausePending) {
+		// Resumed inside the deferred-suspend window, so the sink never stopped.
+		// Restarting it would re-open the stream and let the timer suspend it after.
+		m_pausePending = false;
+		++m_pauseGeneration;
+		if (m_device) {
+			m_device->streamBegin();
+		}
+	} else if (m_audioOutput->state() == QAudio::SuspendedState) {
+		if (m_device) {
+			m_device->streamBegin();
+		}
 		m_audioOutput->resume();
 	} else {
 		m_device->setBufferSamples(m_samples);
 		m_device->setInput(input());
 		m_device->setFormat(m_audioOutput->format());
-		m_audioOutput->start(m_device.get());
+		m_device->streamBegin();
+		// An unpaused() with no matching paused() lands on a sink that never
+		// stopped; restarting throws away the device buffer mid-waveform.
+		if (m_audioOutput->state() != QAudio::ActiveState) {
+			m_audioOutput->start(m_device.get());
+		}
 	}
 	return m_audioOutput->state() == QAudio::ActiveState && m_audioOutput->error() == QAudio::NoError;
 }
 
 void AudioProcessorQt::pause() {
-	if (m_audioOutput) {
+	if (!m_audioOutput) {
+		return;
+	}
+	if (m_device && m_device->streamFilterActive()) {
+		/* Let QAudioSink keep pulling long enough to play the tail out; a straight
+		 * suspend would cut the waveform. The window covers the tail and its mute
+		 * plus a device buffer of slack. */
+		unsigned rate = m_sampleRate ? m_sampleRate : 48000;
+		int delayMs = (int) (((M_AUDIO_RAMP_TAIL + M_AUDIO_RAMP_MUTE + (int) m_samples) * 1000) / (int) rate) + 5;
+		unsigned generation = ++m_pauseGeneration;
+		m_pausePending = true;
+		m_device->streamEnd();
+		QTimer::singleShot(delayMs, this, [this, generation]() {
+			// A resume, or a later pause, inside the window supersedes this one.
+			if (m_pausePending && m_pauseGeneration == generation && m_audioOutput) {
+				m_audioOutput->suspend();
+				m_pausePending = false;
+			}
+		});
+	} else {
 		m_audioOutput->suspend();
+	}
+}
+
+void AudioProcessorQt::jumpBegin() {
+	m_jumpRamped = m_device ? m_device->jumpBegin() : false;
+}
+
+void AudioProcessorQt::jumpEnd() {
+	if (m_device) {
+		m_device->jumpEnd(m_jumpRamped);
 	}
 }
 

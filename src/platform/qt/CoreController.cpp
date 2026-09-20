@@ -308,6 +308,8 @@ void CoreController::loadConfig(ConfigController* config) {
 	m_fastForwardMute = config->getOption("fastForwardMute", false).toInt();
 	mCoreConfigCopyValue(&m_threadContext.core->config, config->config(), "volume");
 	mCoreConfigCopyValue(&m_threadContext.core->config, config->config(), "mute");
+	mCoreConfigCopyValue(&m_threadContext.core->config, config->config(), "audioSpeedFilter");
+	mCoreConfigCopyValue(&m_threadContext.core->config, config->config(), "audioSpeedLowPass");
 	m_preload = config->getOption("preload", true).toInt();
 
 	QSize sizeBefore = screenDimensions();
@@ -504,7 +506,11 @@ void CoreController::stop() {
 
 void CoreController::reset() {
 	m_crashSeen = false;
+	// The reset is serviced on the core thread shortly after; the tail and its
+	// trailing mute cover that gap, and the ramp brings audio back after.
+	emit audioJumpBegin();
 	mCoreThreadReset(&m_threadContext);
+	emit audioJumpEnd();
 }
 
 void CoreController::setPaused(bool paused) {
@@ -563,7 +569,11 @@ void CoreController::setRewinding(bool rewind) {
 		setPaused(false);
 		// TODO: restore autopausing
 	}
+	// Both edges are jumps; the scrub between them is left alone, since
+	// concealing every frame of it would silence it.
+	emit audioJumpBegin();
 	mCoreThreadSetRewinding(&m_threadContext, rewind);
+	emit audioJumpEnd();
 }
 
 void CoreController::rewind(int states) {
@@ -574,7 +584,9 @@ void CoreController::rewind(int states) {
 	if (!states) {
 		states = INT_MAX;
 	}
+	emit audioJumpBegin();
 	mCoreRewindRestore(&m_threadContext.impl->rewind, m_threadContext.core, states);
+	emit audioJumpEnd();
 	interrupter.resume();
 	emit frameAvailable();
 	emit rewound();
@@ -662,11 +674,13 @@ void CoreController::loadState(int slot) {
 		if (!controller->m_backupLoadState.isOpen()) {
 			controller->m_backupLoadState = VFileDevice::openMemory();
 		}
+		emit controller->audioJumpBegin();
 		mCoreSaveStateNamed(context->core, controller->m_backupLoadState, controller->m_saveStateFlags);
 		if (mCoreLoadState(context->core, controller->m_stateSlot, controller->m_loadStateFlags)) {
 			emit controller->frameAvailable();
 			emit controller->stateLoaded();
 		}
+		emit controller->audioJumpEnd();
 	});
 }
 
@@ -687,11 +701,13 @@ void CoreController::loadState(const QString& path, int flags) {
 		if (!controller->m_backupLoadState.isOpen()) {
 			controller->m_backupLoadState = VFileDevice::openMemory();
 		}
+		emit controller->audioJumpBegin();
 		mCoreSaveStateNamed(context->core, controller->m_backupLoadState, controller->m_saveStateFlags);
 		if (mCoreLoadStateNamed(context->core, vf, controller->m_loadStateFlags)) {
 			emit controller->frameAvailable();
 			emit controller->stateLoaded();
 		}
+		emit controller->audioJumpEnd();
 		vf->close(vf);
 	});
 	m_loadStateFlags = savedFlags;
@@ -717,11 +733,13 @@ void CoreController::loadState(QIODevice* iodev, int flags) {
 		if (!controller->m_backupLoadState.isOpen()) {
 			controller->m_backupLoadState = VFileDevice::openMemory();
 		}
+		emit controller->audioJumpBegin();
 		mCoreSaveStateNamed(context->core, controller->m_backupLoadState, controller->m_saveStateFlags);
 		if (mCoreLoadStateNamed(context->core, vf, controller->m_loadStateFlags)) {
 			emit controller->frameAvailable();
 			emit controller->stateLoaded();
 		}
+		emit controller->audioJumpEnd();
 		vf->close(vf);
 	});
 	m_loadStateFlags = savedFlags;
@@ -796,11 +814,13 @@ void CoreController::loadBackupState() {
 	mCoreThreadRunFunction(&m_threadContext, [](mCoreThread* context) {
 		CoreController* controller = static_cast<CoreController*>(context->userData);
 		controller->m_backupLoadState.seek(0);
+		emit controller->audioJumpBegin();
 		if (mCoreLoadStateNamed(context->core, controller->m_backupLoadState, controller->m_loadStateFlags)) {
 			mLOG(STATUS, INFO, "Undid state load");
 			controller->frameAvailable();
 			controller->stateLoaded();
 		}
+		emit controller->audioJumpEnd();
 		controller->m_backupLoadState.close();
 	});
 }

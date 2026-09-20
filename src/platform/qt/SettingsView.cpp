@@ -25,6 +25,7 @@
 #include <mgba/core/serialize.h>
 #include <mgba/core/version.h>
 #include <mgba/internal/gba/gba.h>
+#include <mgba-util/audio-speed.h>
 
 #ifdef BUILD_SDL
 #define SDL_MAIN_HANDLED
@@ -510,6 +511,12 @@ void SettingsView::updateConfig() {
 	saveSetting("mute", m_ui.mute);
 	saveSetting("fastForwardVolume", m_ui.volumeFf);
 	saveSetting("fastForwardMute", m_ui.muteFf);
+	saveSetting("audioSpeedFilter", m_ui.audioSpeedFilter);
+	if (m_ui.audioSpeedLowPassEnable->isChecked()) {
+		saveSetting("audioSpeedLowPass", m_ui.audioSpeedLowPass);
+	} else {
+		saveSetting("audioSpeedLowPass", QVariant(M_AUDIO_LOW_PASS_OFF));
+	}
 	saveSetting("rewindEnable", m_ui.rewind);
 	saveSetting("rewindBufferCapacity", m_ui.rewindCapacity);
 	saveSetting("rewindBufferInterval", m_ui.rewindBufferInterval);
@@ -734,6 +741,15 @@ void SettingsView::reloadConfig() {
 	loadSetting("mute", m_ui.mute, false);
 	loadSetting("fastForwardVolume", m_ui.volumeFf, m_ui.volume->value());
 	loadSetting("fastForwardMute", m_ui.muteFf, m_ui.mute->isChecked());
+	loadSetting("audioSpeedFilter", m_ui.audioSpeedFilter, true);
+
+	QString audioSpeedLowPass = loadSetting("audioSpeedLowPass");
+	int lowPassHz = audioSpeedLowPass.isNull() ? M_AUDIO_LOW_PASS_DEFAULT : audioSpeedLowPass.toInt();
+	// The same range the filter itself reads as off, so a hand-edited config agrees.
+	bool lowPassOn = lowPassHz > 0 && lowPassHz < M_AUDIO_LOW_PASS_OFF;
+	m_ui.audioSpeedLowPassEnable->setChecked(lowPassOn);
+	m_ui.audioSpeedLowPass->setEnabled(lowPassOn);
+	m_ui.audioSpeedLowPass->setValue(lowPassOn ? lowPassHz : M_AUDIO_LOW_PASS_DEFAULT);
 	loadSetting("rewindEnable", m_ui.rewind);
 	loadSetting("rewindBufferCapacity", m_ui.rewindCapacity);
 	loadSetting("rewindBufferInterval", m_ui.rewindBufferInterval);

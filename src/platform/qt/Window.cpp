@@ -1184,6 +1184,10 @@ void Window::reloadAudioDriver() {
 		m_audioProcessor->setInput(m_controller);
 		m_audioProcessor->configure(m_config);
 	}
+	// DirectConnection: these fire on the core thread inside the load/reset and
+	// must run synchronously around the jump, not be queued to this thread.
+	connect(m_controller.get(), &CoreController::audioJumpBegin, m_audioProcessor.get(), &AudioProcessor::jumpBegin, Qt::DirectConnection);
+	connect(m_controller.get(), &CoreController::audioJumpEnd, m_audioProcessor.get(), &AudioProcessor::jumpEnd, Qt::DirectConnection);
 }
 
 void Window::changeRenderer() {
@@ -1958,6 +1962,16 @@ void Window::setupOptions() {
 
 	ConfigOption* muteFf = m_config->addOption("fastForwardMute");
 	muteFf->connect([this](const QVariant&) {
+		reloadConfig();
+	}, this);
+
+	ConfigOption* audioSpeedFilter = m_config->addOption("audioSpeedFilter");
+	audioSpeedFilter->connect([this](const QVariant&) {
+		reloadConfig();
+	}, this);
+
+	ConfigOption* audioSpeedLowPass = m_config->addOption("audioSpeedLowPass");
+	audioSpeedLowPass->connect([this](const QVariant&) {
 		reloadConfig();
 	}, this);
 

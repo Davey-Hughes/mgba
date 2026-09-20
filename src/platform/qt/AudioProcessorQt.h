@@ -33,6 +33,8 @@ public slots:
 	virtual void stop() override;
 	virtual bool start() override;
 	virtual void pause() override;
+	virtual void jumpBegin() override;
+	virtual void jumpEnd() override;
 
 	virtual void setBufferSamples(int samples) override;
 	virtual void inputParametersChanged() override;
@@ -48,6 +50,9 @@ private:
 	std::unique_ptr<AudioDevice> m_device;
 	size_t m_samples = 1024;
 	unsigned m_sampleRate = 44100;
+	bool m_pausePending = false;
+	unsigned m_pauseGeneration = 0;
+	bool m_jumpRamped = false;
 };
 
 }

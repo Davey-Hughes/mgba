@@ -3,6 +3,7 @@ Features:
  - Forwarder support for 3DS and Vita
  - Custom border support
  - New option to lock the maximum frame size
+ - Pitch-corrected audio during fast-forward and slowdown, with an optional low-pass
  - Memory access and information logging
  - Cheats: Add support for CodeBreaker 5XXXXXXX "Super" codes
  - Cheats: Add support for additional, undocumented GameShark IF code types

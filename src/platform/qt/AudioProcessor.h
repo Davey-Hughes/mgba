@@ -45,6 +45,12 @@ public slots:
 	virtual bool start() = 0;
 	virtual void pause() = 0;
 
+	/* Conceal a jump in the game's own timeline - a state load, a reset, a
+	 * rewind - with the pause ramp, so its splice lands in silence. No-ops
+	 * unless a driver overrides them. */
+	virtual void jumpBegin() {}
+	virtual void jumpEnd() {}
+
 	virtual void setBufferSamples(int samples) = 0;
 	virtual void inputParametersChanged() = 0;
 

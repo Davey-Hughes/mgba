@@ -233,6 +233,12 @@ signals:
 	void stateLoaded();
 	void rewound();
 
+	// Emitted around a jump in the game timeline (load, reset, rewind) so the
+	// audio processor can bracket it with the pause ramp. DirectConnection:
+	// they fire on the core thread and must run before/after the jump.
+	void audioJumpBegin();
+	void audioJumpEnd();
+
 	void rewindChanged(bool);
 	void fastForwardChanged(bool);
 
