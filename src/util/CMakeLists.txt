@@ -16,6 +16,7 @@ set(BASE_SOURCE_FILES
 set(SOURCE_FILES
 	${BASE_SOURCE_FILES}
 	audio-buffer.c
+	audio-low-pass.c
 	audio-resampler.c
 	audio-time-stretch.c
 	convolve.c
@@ -42,6 +43,7 @@ set(GUI_FILES
 	gui/menu.c)
 
 set(TEST_FILES
+	test/audio-low-pass.c
 	test/audio-time-stretch-threaded.c
 	test/audio-time-stretch.c
 	test/circle-buffer.c
