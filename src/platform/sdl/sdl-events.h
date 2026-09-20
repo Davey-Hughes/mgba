@@ -58,9 +58,13 @@ struct mSDLEvents {
 #endif
 };
 
+struct mSDLAudio;
+
 struct mSDLPlayer {
 	size_t playerId;
 	struct mInputMap* bindings;
+	// NULL where there is no audio to conceal the load and reset hotkeys' jumps on
+	struct mSDLAudio* audio;
 	struct SDL_JoystickCombo* joystick;
 	int fullscreen;
 	int windowUpdated;

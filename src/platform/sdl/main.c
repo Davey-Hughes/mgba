@@ -153,6 +153,7 @@ int main(int argc, char** argv) {
 	}
 
 	renderer.player.bindings = &renderer.core->inputMap;
+	renderer.player.audio = &renderer.audio;
 	mSDLInitBindingsGBA(&renderer.core->inputMap);
 	mSDLInitEvents(&renderer.events);
 	mSDLEventsLoadConfig(&renderer.events, mCoreConfigGetInput(&renderer.core->config));
@@ -257,10 +258,12 @@ int mSDLRun(struct mSDLRenderer* renderer, struct mArguments* args) {
 			if (args->savestate) {
 				struct VFile* state = VFileOpen(args->savestate, O_RDONLY);
 				if (state) {
+					bool ramped = mSDLAudioJumpBegin(&renderer->audio);
 					_state = state;
 					mCoreThreadRunFunction(&thread, _loadState);
 					_state = NULL;
 					state->close(state);
+					mSDLAudioJumpEnd(&renderer->audio, ramped);
 				}
 			}
 			renderer->runloop(renderer, &thread);

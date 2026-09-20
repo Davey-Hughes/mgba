@@ -5,6 +5,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "sdl-events.h"
 
+#include "sdl-audio.h"
+
 #include <mgba/core/core.h>
 #include <mgba/core/input.h>
 #include <mgba/core/serialize.h>
@@ -614,7 +616,13 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 		return;
 	}
 	if (keycode == SDLK_BACKQUOTE) {
+		/* Both edges are jumps: entering restores a state every frame, and
+		 * leaving splices forward play onto wherever the scrub stopped. */
+		bool ramped = sdlContext->audio && mSDLAudioJumpBegin(sdlContext->audio);
 		mCoreThreadSetRewinding(context, event->type == SDL_KEYDOWN);
+		if (sdlContext->audio) {
+			mSDLAudioJumpEnd(sdlContext->audio, ramped);
+		}
 	}
 	if (event->type == SDL_KEYDOWN) {
 		switch (keycode) {
@@ -659,9 +667,14 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 					context->frameCallback = _pauseAfterFrame;
 					mCoreThreadUnpause(context);
 					break;
-				case SDLK_r:
+				case SDLK_r: {
+					bool ramped = sdlContext->audio && mSDLAudioJumpBegin(sdlContext->audio);
 					mCoreThreadReset(context);
+					if (sdlContext->audio) {
+						mSDLAudioJumpEnd(sdlContext->audio, ramped);
+					}
 					break;
+				}
 				default:
 					break;
 				}
@@ -694,11 +707,16 @@ static void _mSDLHandleKeypress(struct mCoreThread* context, struct mSDLPlayer* 
 				case SDLK_F6:
 				case SDLK_F7:
 				case SDLK_F8:
-				case SDLK_F9:
+				case SDLK_F9: {
+					bool ramped = sdlContext->audio && mSDLAudioJumpBegin(sdlContext->audio);
 					mCoreThreadInterrupt(context);
 					mCoreLoadState(context->core, keycode - SDLK_F1 + 1, SAVESTATE_SCREENSHOT | SAVESTATE_RTC);
 					mCoreThreadContinue(context);
+					if (sdlContext->audio) {
+						mSDLAudioJumpEnd(sdlContext->audio, ramped);
+					}
 					break;
+				}
 				default:
 					break;
 				}
